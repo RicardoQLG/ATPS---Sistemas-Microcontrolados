@@ -5,89 +5,53 @@
 
 #DEFINE LED   PORTB, 2
 
-CBLOCK 0x20
-  tmrflagsa
-  tmrflagsb
-  tmrflagsc
-ENDC
+count equ 0x20 ;Counter variable
+      org 0x000 ; Start program at address 000
+      nop ; Required for debugger
 
-    org 0
-
+START BANK1
     clrf PORTA
-    clrf PORTB
 
-
-    BANK1
     movlw B'00000000'
     movwf TRISB
 
     BANK0
 
+    bcf T1CON,TMR1ON ; Turn Timer 1 off.
+    bsf T1CON,T1CKPS1 ; Set prescaler for divide
+    bsf T1CON,T1CKPS0 ; by 8.
+    bcf T1CON,T1OSCEN ; Disable the RC oscillator.
+    bcf T1CON,TMR1CS ; Use the Fosc/4 source.
+    clrf TMR1L ; Start timer at 0000h
+    clrf TMR1H ;
+    bsf T1CON,TMR1ON ; Start the timer
 
-MAIN
-    bsf LED
-    CALL t0_reset
-    CALL t0_set250
-    CALL t0_wait
+    clrf count
+
+loop
+    call PISCA
+    goto $-1
+
+PISCA bsf LED
+    call TEMPO
     bcf LED
-    CALL t0_reset
-    CALL t0_set250
-    CALL t0_wait
-
-    GOTO MAIN
-
-t0_wait
-  btfss tmrflagsa, 0
-  goto $-1
-  return
-
-t0_set250
-  movlw 0x06 ; approx 0.25ms to overflow
-  movwf TMR0
-  bcf tmrflagsa, 0
-  return
-
-t0_reset
-  clrf TMR0
-  bcf tmrflagsa, 0
-  return
-
-wait_150ms
-    movlw 0x03
-    movwf tmrflagsc
-    call wait_50ms_while
+    call TEMPO
     return
 
-wait_500ms
-    movlw 0x10
-    movwf tmrflagsc
-    call wait_50ms_while
+TEMPO btfss PIR1,0 ; Did timer overflow?
+    goto $-1 ; Wait if not.
+
+    bsf LED
+
+    bcf PIR1,0
+    incf count,F
+    bcf T1CON,0
+    movlw 80h
+    movwf TMR1H
+    clrf TMR1L
+    bsf T1CON,0
     return
 
-wait_50ms_while
-    call wait_50ms
-    movlw 0x01
-    SUBWF tmrflagsc, 1
-    btfss tmrflagsc, 0
-    goto $-1
-    return
-
-wait_50ms
-    movlw 0xC8
-    movwf tmrflagsb
-    call wait_250us
-    return
-
-
-wait_250us
-    CALL t0_reset
-    CALL t0_set250
-    CALL t0_wait
-    movlw 0x01
-    SUBWF tmrflagsb, 0x01
-    btfss tmrflagsb, 0
-    goto $-1
-    return
-END
+    END
 
 
