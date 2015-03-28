@@ -5,26 +5,27 @@
 
 #DEFINE LED   PORTB, 2
 
-count equ 0x20 ;Counter variable
-      org 0x000 ; Start program at address 000
-      nop ; Required for debugger
+count equ 0x20
+      org 0x000
+      nop
 
 START BANK1
     clrf PORTA
+    clrf PORTB
 
     movlw B'00000000'
     movwf TRISB
 
     BANK0
 
-    bcf T1CON,TMR1ON ; Turn Timer 1 off.
-    bsf T1CON,T1CKPS1 ; Set prescaler for divide
-    bsf T1CON,T1CKPS0 ; by 8.
-    bcf T1CON,T1OSCEN ; Disable the RC oscillator.
-    bcf T1CON,TMR1CS ; Use the Fosc/4 source.
-    clrf TMR1L ; Start timer at 0000h
-    clrf TMR1H ;
-    bsf T1CON,TMR1ON ; Start the timer
+    bcf T1CON,TMR1ON
+    bsf T1CON,T1CKPS1
+    bsf T1CON,T1CKPS0
+    bcf T1CON,T1OSCEN
+    bcf T1CON,TMR1CS
+    clrf TMR1L
+    clrf TMR1H
+    bsf T1CON,TMR1ON
 
     clrf count
 
@@ -38,17 +39,16 @@ PISCA bsf LED
     call TEMPO
     return
 
-TEMPO btfss PIR1,0 ; Did timer overflow?
-    goto $-1 ; Wait if not.
-
-    bsf LED
+TEMPO btfss PIR1,0
+    goto $-1
 
     bcf PIR1,0
     incf count,F
     bcf T1CON,0
     movlw 80h
     movwf TMR1H
-    clrf TMR1L
+    movlw 0h
+    movwf TMR1L
     bsf T1CON,0
     return
 
